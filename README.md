@@ -1,5 +1,4 @@
 # Blog-App-Node
-## Description
 * Implemented CRUD operations on BLOG posts
 * Maintained RESTful Routing convention
 * Used semantic UI CSS Framework
