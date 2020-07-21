@@ -2,12 +2,14 @@ let methodOverride = require("method-override"),
     bodyParser = require("body-parser"),
     mongoose = require("mongoose"),
     express = require("express"),
+    expressSanitizer = require("express-sanitizer"),
     app = express();
 
 mongoose.connect("mongodb://localhost/restful_blog_app");
 app.set("view engine", "ejs");
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: true, useNewUrlParser: true, useUnifiedTopology: true}));
+app.use(expressSanitizer());
 app.use(methodOverride("_method"));
 let blogSchema = new mongoose.Schema({
     title: String,
@@ -23,6 +25,8 @@ let Blog = mongoose.model("Blog", blogSchema);
 //     body: "Hello This is Blog Post!!"
 // });
 //Routes
+
+//index route
 app.get("/", (req, res)=>{
     res.redirect("/blogs");
 });
@@ -39,11 +43,17 @@ app.get("/blogs", (req, res)=>{
     //res.render("index");
 });
 
+// new page route
 app.get("/blogs/new", (req, res)=>{
     res.render("new");
 });
 
+// CREATE route
 app.post("/blogs", (req, res)=>{
+    for(let key in req.body.blog){
+        req.body.blog[key] = req.sanitize(req.body.blog[key]);
+    }
+    
     Blog.create(req.body.blog, (err, newBlog)=>{
         if(err){
             console.log("ERROR CREATING NEW BLOG!!");
@@ -52,23 +62,23 @@ app.post("/blogs", (req, res)=>{
             res.redirect("/blogs")
         }
     });
-    console.log(req.body.blog)
 });
 
+// Show Page route
 app.get("/blogs/:id", (req, res)=>{
     Blog.findById(req.params.id, (err, foundBlog)=>{
         if(err){
-            console.log("ERROR!! Blog Not Found");
+            console.log("ERROR!! Blog Not Found: "+err);
             res.redirect("/blogs");
         }
         else{
             res.render("show", {blog: foundBlog});
         }
     })
-    //res.send("Show Page of: "+req.params.id);
     console.log(req.params.id)
 });
 
+// Edit Page Route
 app.get("/blogs/:id/edit", (req,res)=>{
     Blog.findById(req.params.id, (err, blog)=>{
         if(err){
@@ -79,10 +89,13 @@ app.get("/blogs/:id/edit", (req,res)=>{
             res.render("edit", {blog: blog});
         }
     });
-    //res.render("edit");
 });
 
+// UPDATE route
 app.put("/blogs/:id", (req, res)=>{
+    for(let key in req.body.blog){
+        req.body.blog[key] = req.sanitize(req.body.blog[key]);
+    }
     Blog.updateOne({_id: req.params.id}, req.body.blog, (err, blog)=>{
         if(err){
             console.log("ERROR: "+err);
@@ -94,6 +107,7 @@ app.put("/blogs/:id", (req, res)=>{
     });
 });
 
+// DELETE route
 app.delete("/blogs/:id", (req, res)=>{
     Blog.deleteOne({_id: req.params.id}, (err, blog)=>{
         if(err){
